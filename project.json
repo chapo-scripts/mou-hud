@@ -1,0 +1,10 @@
+{
+    "name": "arizona-minhud",
+    "source": "src",
+    "lib": "lib",
+    "distribute": {
+        "constants": {
+            "MOONLY_BUNDLED": true
+        }
+    }
+}
