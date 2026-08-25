@@ -2,7 +2,6 @@ local infoCallbacks = {
     ["ping"] = { name = "Ping", fn = function() return sampGetPlayerPing(MyID()) end },
     ["id"] = { name = "ID", fn = function() return MyID() end },
     ["name"] = { name = "Nickname", fn = function() return sampGetPlayerNickname(MyID()) end },
-    ["fps"] = { name = "FPS", fn = function() end },
     ["players_streamed"] = { name = "Players in stream", fn = function() return sampGetPlayerCount(true) end },
     ["players_total"] = { name = "Players on server", fn = function() return sampGetPlayerCount(false) end },
     ["server_name"] = { name = "Server Name", fn = function() return sampGetCurrentServerName() end },
@@ -13,9 +12,20 @@ local infoCallbacks = {
     ["ped_animation_id"] = { name = "Player animation ID", fn = function() return sampGetPlayerAnimationId(MyID()) end },
     ["system_time"] = { name = "System time", fn = function() return os.date("%d.%m.%y") end },
     ["system_date"] = { name = "System date", fn = function() return os.date("%H:%M:%S") end },
+    ["fps"] = { name = "FPS", fn = function()
+        if (not _G.FPS) then
+            _G.FPS = { value = -1, updatedAt = os.clock() }
+        else
+            if (os.clock() - _G.FPS.updatedAt > 0.5) then
+                _G.FPS.value = ("%.0f"):format(memory.getfloat(0xB7CB50, true))
+                _G.FPS.updatedAt = os.clock()
+            end
+        end
+        return _G.FPS.value
+    end },
 }
 
-local testString = {
+local test = {
     "icon:USER",
     "spacing",
     "data:name",
@@ -35,20 +45,6 @@ local testString = {
     "data:system_time",
 }
 
-local itemsLabels = {
-    ["text:(.+)"] = function(arg)
-        return arg
-    end,
-    ["icon:(.+)"] = function(arg)
-        return faicons(arg)
-    end,
-    ["data:(.+)"] = function(arg)
-        local data = infoCallbacks[arg]
-        return data and tostring(data.fn()) or "NULL"
-    end,
-    ["spacing"] = function() return "spacing" end,
-    ["newline"] = function() return "newline" end
-}
 
 local function getLabelData(item)
     if (not item:find(":")) then
@@ -62,6 +58,8 @@ local function getLabelData(item)
     elseif (type == "data") then
         local data = infoCallbacks[payload]
         return type, data and tostring(data.fn()) or "NULL"
+    elseif (type == "spacing") then
+        return type, payload
     end
     return "NULL", "UNK:" .. item
 end
@@ -71,32 +69,32 @@ local editMode = {
     index = nil
 }
 
+local fpsUpdatedAt, fpsRefreshRate = 0, 0.5
+
+
+
 imgui.OnFrame(
-    function() return true end,
+    function() return isSampAvailable() end,
     function(frame)
         frame.HideCursor = not UI.edit
-        if (imgui.Begin("MouHUD: Info", nil, imgui.WindowFlags.NoDecoration + imgui.WindowFlags.AlwaysAutoResize)) then
+        if (imgui.Begin("MouHUD: Info", nil, imgui.WindowFlags.NoDecoration + imgui.WindowFlags.AlwaysAutoResize + imgui.WindowFlags.NoBackground)) then
+            imgui.SetWindowFontScale(Config.frames.info.fontScale[0])
             imgui.PushFont(UI.font[20].Bold)
-            for index, item in ipairs(testString) do
-                local nextItem = testString[index + 1]
-                if (item:find("text:(.+)")) then
-                    local text = item:match("text:(.+)")
-                    imgui.Text(tostring(text))
-                elseif (item:find("icon:(.+)")) then
-                    local icon = item:match("icon:(.+)")
-                    imgui.Text(faicons(icon))
-                elseif (item:find("data:(.+)")) then
-                    local fnField = item:match("data:(.+)")
-                    local data = infoCallbacks[fnField]
-                    imgui.Text(data and tostring(data.fn()) or "NULL")
-                elseif (item == "newline") then
+            for index, item in ipairs(Config.frames.info.list) do
+                local nextItem = Config.frames.info.list[index + 1]
+                local itemType, itemString = getLabelData(item)
+                local color, outlineSize, outlineColor = UI.Colors.Color.Text.vec4, 2, UI.Colors.Color.TextOutline.vec4
+                
+                if (itemType == "text" or itemType == "data" or itemType == "icon") then
+                    UI.Components.OutlineText(itemString, color, outlineSize, outlineColor)
+                elseif (itemType == "spacing") then
+                    imgui.SameLine(nil, tonumber(itemString) or 5)
+                elseif (itemType == "newline") then
                     imgui.Text("")
                 end
-                if ((nextItem or "newline") ~= "newline") then
-                    imgui.SameLine(nil, item == "spacing" and 5 or 0)
-                else
-                    print("Skip sameline at index", index, item)
-                    -- imgui.Spacing()
+
+                if ((nextItem or "newline") ~= "newline" and itemType ~= "spacing") then
+                    imgui.SameLine(nil, 5)
                 end
             end
             imgui.PopFont()
@@ -107,94 +105,106 @@ imgui.OnFrame(
 
 local function __editorFrame(drawList, pos, size)
     imgui.PushFont(UI.font[15].Bold)
+    local p, childSize = imgui.GetCursorScreenPos(), imgui.ImVec2(size.x - 10, 300)
+    drawList:AddRectFilled(p, p + childSize, imgui.GetColorU32(imgui.Col.FrameBg), 15)
+    if (imgui.BeginChild("editor-items-query", childSize, false, imgui.WindowFlags.AlwaysHorizontalScrollbar)) then
+        imgui.PushStyleColor(imgui.Col.Button, imgui.GetStyle().Colors[imgui.Col.WindowBg])
+        for index, item in ipairs(Config.frames.info.list) do
+            local nextItem = Config.frames.info.list[index + 1]
+            local itemType, itemValue = getLabelData(item)
+            local buttonLabel = itemValue .. "##" .. index
+            if (imgui.Button(buttonLabel)) then
+                if (itemType == "text") then
+                    editMode = { type = itemType, index = index, buff = imgui.new.char[128](itemValue) }
+                    imgui.OpenPopup("info-edit-item")
+                end
+            end
+            if (imgui.IsItemClicked(1)) then
+                table.remove(Config.frames.info.list, index)
+            end
+            if (imgui.BeginDragDropSource(1)) then
+                imgui.SetDragDropPayload('##payload', ffi.new('int[1]', index), 23);
+            end
+            if (imgui.BeginDragDropTarget()) then
+                local Payload = imgui.AcceptDragDropPayload(nil, 1);
+                if (Payload ~= nil) then
+                    local oldIndex = ffi.cast("int*",Payload.Data)[0];
+                    local firstItem = Config.frames.info.list[oldIndex]
+                    Config.frames.info.list[oldIndex] = item
+                    Config.frames.info.list[index] = firstItem
+                end
+                imgui.EndDragDropTarget();
+            end
+            if (nextItem and nextItem ~= "newline") then
+                imgui.SameLine(nil, 5)
+            end
+        end
+        imgui.PopStyleColor()
+        imgui.SameLine()
         
-            for index, item in ipairs(testString) do
-                local nextItem = testString[index + 1]
-                local itemType, itemValue = getLabelData(item)
-                local buttonLabel = itemValue .. "##" .. index
-                if (imgui.Button(buttonLabel)) then
-                    if (itemType == "text") then
-                        editMode = { type = itemType, index = index, buff = imgui.new.char[128](itemValue) }
-                        imgui.OpenPopup("info-edit-item")
-                    end
-                end
-                if (imgui.IsItemClicked(1)) then
-                    table.remove(testString, index)
-                end
-                if (imgui.BeginDragDropSource(1)) then
-                    imgui.SetDragDropPayload('##payload', ffi.new('int[1]', index), 23);
-                end
-                if (imgui.BeginDragDropTarget()) then
-                    local Payload = imgui.AcceptDragDropPayload(nil, 1);
-                    if (Payload ~= nil) then
-                        local oldIndex = ffi.cast("int*",Payload.Data)[0];
-                        local firstItem = testString[oldIndex]
-                        testString[oldIndex] = item
-                        testString[index] = firstItem
-                    end
-                    imgui.EndDragDropTarget();
-                end
-
-                if (nextItem and nextItem ~= "newline") then
-                    imgui.SameLine(nil, 5)
+        -- Edit item
+        if (imgui.BeginPopupModal("info-edit-item", nil, imgui.WindowFlags.AlwaysAutoResize)) then
+            imgui.Text("Edit item")
+            if (editMode.type == "text") then
+                if (imgui.InputText("##edit-label-as-text", editMode.buff, 128)) then
+                    Config.frames.info.list[editMode.index] = "text:" .. ffi.string(editMode.buff)
                 end
             end
-            imgui.SameLine()
-
-            -- Edit item
-            if (imgui.BeginPopupModal("info-edit-item", nil, imgui.WindowFlags.AlwaysAutoResize)) then
-                imgui.Text("Edit item")
-                if (editMode.type == "text") then
-                    if (imgui.InputText("##edit-label-as-text", editMode.buff, 128)) then
-                        testString[editMode.index] = "text:" .. ffi.string(editMode.buff)
+            if (imgui.Button("Close")) then
+                editMode = { index = nil, type = nil }
+                imgui.CloseCurrentPopup()
+            end
+            imgui.EndPopup()
+        end
+        -- Push new item
+        if (imgui.Button(faicons("PLUS"))) then
+            imgui.OpenPopup("info-push")
+        end
+        if (imgui.BeginPopup("info-push", nil)) then
+            if (imgui.MenuItemBool("Text")) then
+                table.insert(Config.frames.info.list, "text:Left click to edit this label")
+            end
+            -- if (imgui.MenuItemBool("Spacing")) then
+            --     table.insert(Config.frames.info.list, "spacing")
+            -- end
+            if (imgui.BeginMenu("Spacing")) then
+                for _, px in ipairs({5, 10, 15, 20, 25, 30, 45, 50, 75, 100}) do
+                    if (imgui.MenuItemBool(px .. " px.")) then
+                        table.insert(Config.frames.info.list, "spacing:" .. px)
                     end
                 end
-                if (imgui.Button("Close")) then
-                    editMode = { index = nil, type = nil }
-                    imgui.CloseCurrentPopup()
-                end
-                imgui.EndPopup()
+                imgui.EndMenu()
             end
-
-            -- Push new item
-            if (imgui.Button(faicons("PLUS"))) then
-                imgui.OpenPopup("info-push")
+            if (imgui.MenuItemBool("New line")) then
+                table.insert(Config.frames.info.list, "newline")
             end
-
-            if (imgui.BeginPopup("info-push", nil)) then
-                if (imgui.MenuItemBool("Text")) then
-                    table.insert(testString, "text:Left click to edit this label")
-                end
-                if (imgui.MenuItemBool("Spacing")) then
-                    table.insert(testString, "spacing")
-                end
-                if (imgui.MenuItemBool("New line")) then
-                    table.insert(testString, "newline")
-                end
-                if (imgui.BeginMenu("Icon")) then
-                    for _, icon in ipairs(UI.font.requiredIcons) do
-                        if (imgui.MenuItemBool(faicons(icon), icon)) then
-                            table.insert(testString, "icon:" .. icon)
-                        end
+            if (imgui.BeginMenu("Icon")) then
+                for _, icon in ipairs(UI.font.requiredIcons) do
+                    if (imgui.MenuItemBool(faicons(icon), icon)) then
+                        table.insert(Config.frames.info.list, "icon:" .. icon)
                     end
-                    imgui.EndMenu()
                 end
-                if (imgui.BeginMenu("Info")) then
-                    for k, v in pairs(infoCallbacks) do
-                        if (imgui.MenuItemBool(v.name, tostring(v.fn() or ""))) then
-                            table.insert(testString, "data:" .. k)
-                        end
-                    end
-                    imgui.EndMenu();
-                end
-                imgui.EndPopup();
+                imgui.EndMenu()
             end
-        
-        imgui.PopFont()
+            if (imgui.BeginMenu("Info")) then
+                for k, v in pairs(infoCallbacks) do
+                    if (imgui.MenuItemBool(v.name, tostring(v.fn() or ""))) then
+                        table.insert(Config.frames.info.list, "data:" .. k)
+                    end
+                end
+                imgui.EndMenu();
+            end
+            imgui.EndPopup();
+        end
+    end
+    imgui.EndChild()
+
+    imgui.SliderFloat("Font scale", Config.frames.info.fontScale, 0.1, 4)
+    imgui.PopFont()
 end
 
 return {
     name = "Info",
     description = "Display any info as widget",
-    onDraw = __editorFrame
+    editorFrame = __editorFrame
 }

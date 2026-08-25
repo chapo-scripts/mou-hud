@@ -12,6 +12,7 @@ Weapons = require("game.weapons")
 encoding = require("encoding")
 encoding.default = "CP1251"
 u8 = encoding.UTF8
+require("config")
 require("utils")
 require("cef")
 require("arizona")

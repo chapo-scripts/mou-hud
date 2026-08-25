@@ -50,5 +50,11 @@ imgui.OnFrame(
 
 return {
     name = "Sever logo",
-    description = ""
+    description = "",
+    defaultConfig = {
+        
+    },
+    editorFrame = function()
+        
+    end
 }

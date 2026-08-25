@@ -1,6 +1,6 @@
 UI = {
     hud = imgui.new.bool(true),
-    edit = false,
+    edit = true,
     Components = {
         Bar = require("ui.components.bar"),
         OutlineTextDL = require("ui.components.outline-dl-text"),
@@ -40,7 +40,17 @@ UI = {
             "UNLOCK",
             "GEAR",
             "CARET_LEFT",
-            "CARET_RIGHT"
+            "CARET_RIGHT",
+            
+            "CALENDAR",
+            "CLOCK",
+
+            "PERSON",
+
+            "PERSON_WALKING",
+            "SIGNAL",
+            "IMAGE",
+            "IMAGES"
         }
     },
     blink = {
@@ -59,6 +69,10 @@ UI = {
     }
 }
 
+for _, additionalIcon in ipairs(Config.additionalIcons) do
+    table.insert(UI.font.requiredIcons, additionalIcon)
+end
+
 UI.outline.color = UI.Colors.Color.TextOutline.vec4
 
 function UI.blink:GetPanicColor()
@@ -66,3 +80,12 @@ function UI.blink:GetPanicColor()
 end
 
 require("ui.style")
+
+-- Load default values
+for _, frame in ipairs(UI.Frames) do
+    if (type(frame) == "table") then
+        if (frame.defaultConfig) then
+
+        end
+    end
+end
