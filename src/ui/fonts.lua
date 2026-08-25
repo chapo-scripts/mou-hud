@@ -21,6 +21,10 @@ return function(sizes, icons)
             local list = icons
             for _, b in ipairs(list) do builder:AddText(faicons(b)) end
             builder:BuildRanges(defaultGlyphRanges)
+            -- local config = imgui.ImFontConfig()
+            -- config.MergeMode = true
+            -- config.PixelSnapH = true
+            -- iconRanges = imgui.new.ImWchar[3](faicons.min_range, faicons.max_range, 0)
             UI.font[size][name] = imgui.GetIO().Fonts:AddFontFromMemoryCompressedBase85TTF(faicons.get_font_data_base85('solid'), size, config, defaultGlyphRanges[0].Data)
         end
     end

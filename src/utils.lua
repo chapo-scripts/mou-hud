@@ -1,5 +1,9 @@
 Utils = {};
 
+function MyID()
+    return isSampAvailable() and select(2, sampGetPlayerIdByCharHandle(PLAYER_PED)) or 0
+end
+
 function Utils.msg(...)
     sampAddChatMessage(("MouHUD // %s"):format(table.concat({ ... }, " ")), -1)
 end

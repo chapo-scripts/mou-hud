@@ -3,6 +3,7 @@ local Colors = {
         Text = { vec4 = imgui.ImVec4(1, 1, 1, 1), u32 = -1 },
         TextOutline = { vec4 = imgui.ImVec4(0.28, 0.28, 0.28, 0.5), u32 = -1 },
         Red = { vec4 = imgui.ImVec4(0.92, 0.29, 0.29, 1), u32 = -1 },
+        Black = { vec4 = imgui.ImVec4(0, 0, 0, 1), u32 = -1 },
     }
 }
 Color = Colors.Color

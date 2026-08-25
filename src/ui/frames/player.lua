@@ -1,7 +1,7 @@
 imgui.OnFrame(
     function() return UI.hud[0] and not isGamePaused() and isGameWindowForeground() end,
     function(thisFrame)
-        thisFrame.HideCursor = true
+        thisFrame.HideCursor = not UI.edit
         local res = imgui.GetIO().DisplaySize
         
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, res.y / 2), imgui.Cond.FirstUseEver, imgui.ImVec2(0.5, 0.5))
@@ -14,13 +14,15 @@ imgui.OnFrame(
                 colorVec4 = imgui.ImVec4(0.28, 0.28, 0.28, 0.5)
             }
 
+            
+            local editBlinkValue = 100 * UI.blink.alpha
             imgui.PushFont(UI.font[15].Bold)
-            UI.Components.Bar(DL, "HP", "heart", getCharHealth(PLAYER_PED), 100, outline, 20)
-            if (getCharArmour(PLAYER_PED) > 0) then
-                UI.Components.Bar(DL, "ARMOUR", "shield", getCharArmour(PLAYER_PED), 100, outline)
+            UI.Components.Bar(DL, "HP", "heart", UI.edit and editBlinkValue or getCharHealth(PLAYER_PED), 100, outline, 20)
+            if (getCharArmour(PLAYER_PED) > 0 or UI.edit) then
+                UI.Components.Bar(DL, "ARMOUR", "shield", UI.edit and editBlinkValue or getCharArmour(PLAYER_PED), 100, outline)
             end
-            if (HUD.satiety ~= nil) then
-                UI.Components.Bar(DL, "SATIETY", "burger", HUD.satiety, 100, outline, 20)
+            if (HUD.satiety ~= nil or UI.edit) then
+                UI.Components.Bar(DL, "SATIETY", "burger", UI.edit and editBlinkValue or HUD.satiety, 100, outline, 20)
             end
             
             -- Wanted
@@ -85,8 +87,13 @@ imgui.OnFrame(
             -- faicons("MASK_FACE")
             
             imgui.PopFont()
+            UI.Components.Editor("player", {})
             imgui.End()
         end
     end
 )
 
+return {
+    name = "Player",
+    description = ""
+}

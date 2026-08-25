@@ -2,7 +2,7 @@ JS = {
     DisableArizonaHUD = [[
         const hud = document.querySelector(".player-info");
         if (hud)
-            //hud.style.display = "none";
+            hud.style.display = "none";
         console.log("[MouHUD] DisableArizonaHUD:", hud)
     ]],
     EnableArizonaHUD = [[

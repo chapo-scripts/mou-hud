@@ -5,13 +5,15 @@ UI = {
         Bar = require("ui.components.bar"),
         OutlineTextDL = require("ui.components.outline-dl-text"),
         OutlineText = require("ui.components.outline-text"),
-        Spinner = require("ui.components.spinner")
+        Spinner = require("ui.components.spinner"),
+        Editor = require("ui.components.editor")
     },
     Frames = {
-        Player = require("ui.frames.player"),
-        Vehicle = require("ui.frames.vehicle"),
-        GreenZone = require("ui.frames.greenzone"),
-        ServerLogo = require("ui.frames.serverlogo")
+        require("ui.frames.player"),
+        require("ui.frames.vehicle"),
+        require("ui.frames.serverlogo"),
+        require("ui.frames.info"),
+        require("ui.frames.editor"),
     },
     Resource = {
         Fonts = require("ui.resource.fonts"),
@@ -19,7 +21,27 @@ UI = {
     },
     Colors = require("ui.colors"),
     font = {
-        Init = require("ui.fonts")
+        Init = require("ui.fonts"),
+        requiredSizes = { 15, 16, 20, 24, 40, 64 },
+        requiredIcons = {
+            "PLUS",
+            "HEART",
+            "VEST",
+            "SHIELD",
+            "STAR",
+            "BURGER",
+            "HAND_FIST",
+            "BAN",
+            "GAS_PUMP",
+            "ROAD",
+            "USER",
+            "USERS",
+            "LOCK",
+            "UNLOCK",
+            "GEAR",
+            "CARET_LEFT",
+            "CARET_RIGHT"
+        }
     },
     blink = {
         start = os.clock(),
@@ -44,4 +66,3 @@ function UI.blink:GetPanicColor()
 end
 
 require("ui.style")
-require("ui.frame")

@@ -3,6 +3,7 @@
 script_name("MouHud")
 script_author("chapo a.k.a moujeek")
 
+DLStatus = require('moonloader').download_status
 ffi = require("ffi")
 memory = require("memory")
 faicons = require("fAwesome6")
@@ -25,6 +26,7 @@ HUD = {
     wanted = 0,
     isGreenZone = false,
     vehicle = {
+        isLocked = false,
         speed = 87,
         mileage = 0,
         fuel = {
@@ -43,11 +45,11 @@ updaterState = UpdaterState.None
 
 function main()
     while not isSampAvailable() do wait(0) end
-    Arizona:LoadWeaponsDataFromFile()
-    Arizona:DownloadWeaponsData()
+    Arizona:Init()
     Utils.msg("t.me/moujeek")
-    if (DEBUG) then
-        sampRegisterChatCommand("mouhud", function(arg)
+    
+    sampRegisterChatCommand("mouhud", function(arg)
+        if (DEBUG and #arg > 0) then
             if (arg:find("(%w+) (%d+)")) then
                 local field, value = arg:match("(%w+) (%d+)")
                 if (field == "satiety") then
@@ -73,8 +75,10 @@ function main()
                     Utils.debugMsg("Unknown MouHUD command")
                 end
             end
-        end)
-    end
+        else
+            UI.edit = not UI.edit
+        end
+    end)
     addEventHandler("onSendPacket", function(id, bs)
         local status, str = CEF:readOutcomingPacket(id, bs, true)
         if (status and str:find("^mouhud:(.+);(.+)")) then
@@ -97,7 +101,7 @@ function main()
             elseif (event == "setIsGreenZone") then
                 HUD.isGreenZone = tonumber(payload) == 1
             end
-            Utils.debugMsg("CEF->Lua:", str)
+            -- Utils.debugMsg("CEF->Lua:", str)
         end
     end)
     addEventHandler("onReceivePacket", function(id, bs)

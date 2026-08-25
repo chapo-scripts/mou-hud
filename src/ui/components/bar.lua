@@ -42,6 +42,7 @@ return function(DL, strId, icon, value, maxValue, outline, panicValue)
 
         if (panicValue and value <= panicValue) then
             DL:AddRectFilled(barStart, barEnd, UI.Colors.withAlpha(UI.Colors.Color.Red.u32, UI.blink.alpha), 10)
+            -- Utils.msg("Draw panic for", strId, UI.blink.alpha)
         end
     end
     imgui.Dummy(imgui.ImVec2(BAR_WIDTH, BAR_HEIGHT))

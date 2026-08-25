@@ -20,11 +20,16 @@ function Arizona:IsArizona()
     return ffi.string(ffi.C.GetCommandLineA()):find('%-arizona')
 end
 
----@param serverNumber number
-function Arizona:GetServerLogo(serverNumber)
+function Arizona:Init()
+    Arizona:LoadWeaponsDataFromFile()
+    Arizona:DownloadWeaponsData()
     if (not doesDirectoryExist(self.RESOURCE_PATH)) then
         createDirectory(self.RESOURCE_PATH .. "\\server-logo")
     end
+end
+
+---@param serverNumber number
+function Arizona:GetServerLogo(serverNumber)
     if (serverNumber <= 0) then
         return
     end
@@ -35,8 +40,12 @@ function Arizona:GetServerLogo(serverNumber)
     Utils.debugMsg("Downloading logo for", serverNumber)
     downloadUrlToFile(
         ("https://reserve-cdn.azresources.cloud/projects/arizona-rp/assets/images/project_icons/%d.png"):format(serverNumber),
-        path,
-        nil
+        path .. "_temp",
+        function(id, status, p1, p2)
+        if (status == DLStatus.STATUSEX_ENDDOWNLOAD) then
+            os.rename(path .. "_temp", path)
+        end
+    end
     )
 end
 
