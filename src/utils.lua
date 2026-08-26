@@ -5,6 +5,9 @@ function MyID()
 end
 
 function Utils.msg(...)
+    if (not isSampAvailable()) then
+        return
+    end
     sampAddChatMessage(("MouHUD // %s"):format(table.concat({ ... }, " ")), -1)
 end
 

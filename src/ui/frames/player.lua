@@ -1,5 +1,5 @@
 imgui.OnFrame(
-    function() return UI.hud[0] and not isGamePaused() and isGameWindowForeground() end,
+    function() return Config.frames.player.enabled[0] and not isGamePaused() and isGameWindowForeground() end,
     function(thisFrame)
         thisFrame.HideCursor = not UI.edit
         local res = imgui.GetIO().DisplaySize
@@ -21,12 +21,15 @@ imgui.OnFrame(
             if (getCharArmour(PLAYER_PED) > 0 or UI.edit) then
                 UI.Components.Bar(DL, "ARMOUR", "shield", UI.edit and editBlinkValue or getCharArmour(PLAYER_PED), 100, outline)
             end
-            if (HUD.satiety ~= nil or UI.edit) then
+            if (Config.frames.player.showSatiety[0] and (HUD.satiety ~= nil or UI.edit)) then
                 UI.Components.Bar(DL, "SATIETY", "burger", UI.edit and editBlinkValue or HUD.satiety, 100, outline, 20)
+            end
+            if (Config.frames.player.showStamina[0]) then
+                UI.Components.Bar(DL, "STAMINA", "PERSON_WALKING", UI.edit and editBlinkValue or HUD.satiety, 100, outline, 20)
             end
             
             -- Wanted
-            if (HUD.wanted > 0) then
+            if (HUD.wanted > 0 or UI.edit) then
                 UI.Components.OutlineText(faicons("STAR"), nil, outline.size, outline.color)
                 imgui.SameLine(30)
                 UI.Components.OutlineText(tostring(HUD.wanted), nil, outline.size, outline.color)
@@ -35,18 +38,18 @@ imgui.OnFrame(
 
             -- Money
             imgui.PushFont(UI.font[24].Bold)
-            local moneyLabel = "$ " .. Utils.commaValue(getPlayerMoney(nil), ".") ---@diagnostic disable-line
+            local moneyLabel = "$ " .. (Config.frames.player.moneySeparator[0] and Utils.commaValue(getPlayerMoney(nil), ".") or getPlayerMoney(nil)) ---@diagnostic disable-line
             imgui.SetCursorPosX(imgui.GetWindowWidth() - imgui.CalcTextSize(moneyLabel).x - 10)
             UI.Components.OutlineText(moneyLabel, nil, outline.size, outline.color)
             imgui.PopFont()
 
             -- Weapon
             local weapon = getCurrentCharWeapon(PLAYER_PED)
-            if (weapon ~= 0) then
+            if (weapon ~= 0 or UI.edit) then
                 local weaponName = Arizona:GetWeaponName(weapon)
                 UI.Components.OutlineText(weaponName, nil, outline.size, outline.color)
 
-                if (not Utils.isCurrentWeaponMelee()) then
+                if (not Utils.isCurrentWeaponMelee() or UI.edit) then
                     local ammoInClip = Utils.getAmmoInClip()
                     local totalAmmo = getAmmoInCharWeapon(PLAYER_PED, weapon) - ammoInClip
                     
@@ -71,7 +74,7 @@ imgui.OnFrame(
             
             -- GreenZone
             local effects = {HUD.isGreenZone}
-            if (HUD.isGreenZone) then
+            if (HUD.isGreenZone or UI.edit) then
                 imgui.PushFont(UI.font[24].Bold)
                 local greenZoneBanIconSize = imgui.CalcTextSize(faicons("BAN"))
                 imgui.SetCursorPosX(imgui.GetWindowWidth() - greenZoneBanIconSize.x - 5)
@@ -94,6 +97,28 @@ imgui.OnFrame(
 )
 
 return {
-    name = "Player",
-    description = ""
+    name = Label.TAB_PLAYER,
+    description = Label.TAB_PLAYER_DESCRIPTION,
+    editorFrame = function()
+        imgui.Checkbox(Label.ENABLE .. "##Config.frames.player.enabled", Config.frames.player.enabled)
+        imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_DISABLE_GAME_HUD .. "##Config.frames.player.hideGameHUD", Config.frames.player.hideGameHUD)
+        if (imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_DISABLE_ARIZONA_HUD .. "##Config.frames.player.hideArizonaHUD", Config.frames.player.hideArizonaHUD)) then
+            CEF:evalnon(Config.frames.player.hideArizonaHUD[0] and JS.DisableArizonaHUD or JS.EnableArizonaHUD)
+        end
+
+        imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_DISPLAY_SATIETY .. "##Config.frames.player.showSatiety", Config.frames.player.showSatiety)
+        imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_DISPLAY_STAMINA .. "##Config.frames.player.showStamina", Config.frames.player.showStamina)
+        imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_MONEY_SEPARATOR .. "##Config.frames.player.moneySeparator", Config.frames.player.moneySeparator)
+        
+        imgui.Spacing()
+        imgui.PushFont(UI.font[20].Bold)
+        imgui.TextDisabled(Label.TAB_PLAYER_SETTINGS_TITLE_BARS)
+        imgui.PopFont()
+        imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_BLINK_ON_LOW .. "##Config.frames.player.bar.blink.enabled", Config.frames.player.bar.blink.enabled)
+        
+        -- imgui.SliderInt3("Low values", Config.frames.player.bar.blink.minValues, 1, 100, "%d%%")
+    end,
+    loop = function()
+        displayHud(not Config.frames.player.hideGameHUD[0])
+    end
 }

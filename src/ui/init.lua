@@ -1,6 +1,7 @@
 UI = {
     hud = imgui.new.bool(true),
     edit = true,
+    Localization = require("ui.localization"),
     Components = {
         Bar = require("ui.components.bar"),
         OutlineTextDL = require("ui.components.outline-dl-text"),
@@ -22,7 +23,7 @@ UI = {
     Colors = require("ui.colors"),
     font = {
         Init = require("ui.fonts"),
-        requiredSizes = { 15, 16, 20, 24, 40, 64 },
+        requiredSizes = { 12, 15, 16, 20, 24, 40, 64 },
         requiredIcons = {
             "PLUS",
             "HEART",

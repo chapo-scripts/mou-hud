@@ -1,18 +1,32 @@
 local navanim = {
     current = 0,
     to = 1,
-    start = 0
+    start = 0,
+    drag = 0
 }
+
+function navanim:switchTo(newIndex, add)
+    if (not newIndex) then
+        newIndex = self.to + add
+    end
+    if (newIndex < 1) then
+        newIndex = 4
+    elseif (newIndex > 4) then
+        newIndex = 1
+    end
+    self.to = newIndex
+    self.start = os.clock()
+end
 
 local function nav(items, itemSize)
     local drawList = imgui.GetWindowDrawList()
-    local totalSize = imgui.ImVec2((itemSize * #items) + 5, 26)
+    local totalSize = imgui.ImVec2((itemSize * #items), 26)
     
     imgui.NewLine()
     imgui.SetCursorPosX(imgui.GetWindowWidth() / 2 - totalSize.x / 2)
 
     local p = imgui.GetCursorScreenPos()
-    local padding = imgui.ImVec2(10, 10)
+    local padding = imgui.ImVec2(5, 5)
     local currentTabX = itemSize * (navanim.current - 1)
     drawList:AddRectFilled(p - padding, p + totalSize + padding, imgui.GetColorU32(imgui.Col.FrameBg), 100)
     drawList:AddRectFilled(p + imgui.ImVec2(currentTabX, 0), p + imgui.ImVec2(itemSize + currentTabX, totalSize.y), imgui.GetColorU32(imgui.Col.FrameBg, 1), 100)
@@ -24,8 +38,7 @@ local function nav(items, itemSize)
     if (imgui.BeginChild("settings-nav", totalSize, false)) then
         for k, v in ipairs(items) do
             if (imgui.Button(v.name, imgui.ImVec2(itemSize, totalSize.y))) then
-                navanim.to = k
-                navanim.start = os.clock()
+                navanim:switchTo(k)
             end
             if (k < #items) then
                 imgui.SameLine(nil, 0)
@@ -69,7 +82,7 @@ imgui.OnFrame(
         imgui.SetNextWindowPos(imgui.ImVec2(res.x / 2, size.y * anim.progress), imgui.Cond.Always, imgui.ImVec2(0.5, 1))
         imgui.SetNextWindowSize(size, imgui.Cond.Always)
         -- imgui.PushStyleVarVec2(imgui.StyleVar.WindowMinSize, imgui.ImVec2(500, 50))
-        if (imgui.Begin("MouHUD: Settings", nil, imgui.WindowFlags.NoDecoration + imgui.WindowFlags.NoBackground)) then
+        if (imgui.Begin("MouHUD: Settings", nil, imgui.WindowFlags.NoDecoration + imgui.WindowFlags.NoBackground + imgui.WindowFlags.NoScrollWithMouse)) then
             local pos, size = imgui.GetWindowPos(), imgui.GetWindowSize()
             local bgDrawList, fgDrawList = imgui.GetBackgroundDrawList(), imgui.GetForegroundDrawList()
 
@@ -96,12 +109,21 @@ imgui.OnFrame(
 
             
             local contentSize = imgui.ImVec2(size.x - 30, size.y - imgui.GetCursorPosY() - 1)
-            imgui.SetCursorPos(imgui.ImVec2(15 - (contentSize.x * (navanim.current - 1)) - (30 * (navanim.current - 1)), 15 + 10 + 26 + 10 + 15))
+            imgui.SetCursorPos(imgui.ImVec2(15 - (contentSize.x * (navanim.current - 1)) - (30 * (navanim.current - 1)) + navanim.drag, 15 + 10 + 26 + 10 + 15))
             for i, frame in ipairs(frames) do
                 local p = imgui.GetCursorScreenPos()
                 fgDrawList:AddRect(p, p + contentSize, 0xFFff0000)
+                imgui.PushStyleVarVec2(imgui.StyleVar.WindowPadding, imgui.ImVec2(10, 10))
                 if (imgui.BeginChild("settings-page-content-" .. frame.index, contentSize, true)) then
                     local drawList, pos, size = imgui.GetWindowDrawList(), imgui.GetWindowPos(), imgui.GetWindowSize()
+
+                    local wheel = imgui.GetIO().MouseWheel
+                    if (wheel > 0) then
+                        navanim:switchTo(navanim.to - 1)
+                    elseif (wheel < 0) then
+                        navanim:switchTo(navanim.to + 1)
+                    end
+
                     if (frame.description) then
                         imgui.PushFont(UI.font[20].Bold)
                         imgui.TextWrapped(frame.description)
@@ -114,6 +136,7 @@ imgui.OnFrame(
                     end
                 end
                 imgui.EndChild()
+                imgui.PopStyleVar()
                 if (i < #frames) then
                     imgui.SameLine(nil, 30)
                 end

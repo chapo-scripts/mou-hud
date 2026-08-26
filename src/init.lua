@@ -3,7 +3,10 @@
 script_name("MouHud")
 script_author("chapo a.k.a moujeek")
 
-DLStatus = require('moonloader').download_status
+DEBUG = MOONLY_BUNDLED == nil; ---@diagnostic disable-line
+
+require("moonloader")
+DLStatus = require("moonloader").download_status
 ffi = require("ffi")
 memory = require("memory")
 faicons = require("fAwesome6")
@@ -20,7 +23,6 @@ require("js")
 require("ui")
 Effil = require("effil")
 
-DEBUG = MOONLY_BUNDLED == nil; ---@diagnostic disable-line
 HUD = {
     serverId = 0,
     satiety = nil,
@@ -134,6 +136,12 @@ function main()
             end
         end
     end)
+    framesCallbacks = {}
+    for _, v in ipairs(UI.Frames) do
+        if (type(v) == "table" and type(v.loop) == "function") then
+            table.insert(framesCallbacks, v.loop)
+        end
+    end
     while (true) do
         wait(0)
         UI.blink.alpha = Utils.bringFloatTo(UI.blink.alpha, UI.blink.state == 1 and 1 or 0, UI.blink.start, UI.blink.duration)
@@ -143,6 +151,9 @@ function main()
         elseif (UI.blink.alpha == 0) then
             UI.blink.start = os.clock()
             UI.blink.state = 1
+        end
+        for _, fn in ipairs(framesCallbacks) do
+            fn()
         end
     end
 end
