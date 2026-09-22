@@ -79,6 +79,7 @@ function main()
                 Utils.msg(Label.COMMAND_EDIT)
             end
         end
+        Config()
     end)
     
     Arizona:Init()
