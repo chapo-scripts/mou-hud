@@ -1,6 +1,6 @@
 UI = {
     hud = imgui.new.bool(true),
-    edit = true,
+    edit = false,
     Localization = require("ui.localization"),
     Components = {
         Bar = require("ui.components.bar"),
@@ -48,6 +48,7 @@ UI = {
 
             "PERSON",
 
+            "CIRCLE",
             "PERSON_WALKING",
             "SIGNAL",
             "IMAGE",
@@ -62,7 +63,8 @@ UI = {
     },
     logo = {
         arizona = nil,
-        server = nil
+        server = nil,
+        custom = nil
     },
     outline = {
         width = 2,

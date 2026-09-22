@@ -8,11 +8,26 @@ function Utils.msg(...)
     if (not isSampAvailable()) then
         return
     end
-    sampAddChatMessage(("MouHUD // %s"):format(table.concat({ ... }, " ")), -1)
+    sampAddChatMessage(u8:decode(("MouHUD // %s"):format(table.concat({ ... }, " "))), -1)
 end
 
 function Utils.debugMsg(...)
     return DEBUG and Utils.msg("DEBUG //", ...) or nil
+end
+
+---@param path string directory
+---@param ftype string|string[] file extension
+---@return string[] files names
+function Utils.getFilesInPath(path, ftype)
+    assert(path, '"path" is required');
+    assert(type(ftype) == 'table' or type(ftype) == 'string', '"ftype" must be a string or array of strings');
+    local result = {};
+    for _, thisType in ipairs(type(ftype) == 'table' and ftype or { ftype }) do
+        local searchHandle, file = findFirstFile(path.."\\"..thisType);
+        table.insert(result, file)
+        while file do file = findNextFile(searchHandle) table.insert(result, file) end
+    end
+    return result;
 end
 
 function Utils.commaValue(n, char) -- https://www.blast.hk/threads/39380/
@@ -34,13 +49,14 @@ function Utils.bringVec4To(from, to, start_time, duration)
     return (timer > duration) and to or from, false
 end
 
+local __isWeaponMelee = ffi.cast("bool(__thiscall*)(void *this)", 0x73B1C0)
 function Utils.isCurrentWeaponMelee()
     local pointer = getCharPointer(playerPed)
     local weapon = getCurrentCharWeapon(playerPed)
     local slot = getWeapontypeSlot(weapon)
     
     local weapon = ffi.cast("void*", pointer + 0x5A0 + slot * 0x1C)
-    local res = ffi.cast("bool(__thiscall*)(void *this)", 0x73B1C0)(weapon)
+    local res = __isWeaponMelee(weapon)
     return res
 end
 

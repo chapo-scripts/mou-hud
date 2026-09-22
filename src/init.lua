@@ -7,21 +7,24 @@ DEBUG = MOONLY_BUNDLED == nil; ---@diagnostic disable-line
 
 require("moonloader")
 DLStatus = require("moonloader").download_status
+Weapons = require("game.weapons")
+
 ffi = require("ffi")
 memory = require("memory")
-faicons = require("fAwesome6")
-imgui = require("mimgui")
-Weapons = require("game.weapons")
+Effil = require("effil")
 encoding = require("encoding")
 encoding.default = "CP1251"
 u8 = encoding.UTF8
+
+faicons = require("fAwesome6")
+imgui = require("mimgui")
+
 require("config")
 require("utils")
 require("cef")
 require("arizona")
 require("js")
 require("ui")
-Effil = require("effil")
 
 HUD = {
     serverId = 0,
@@ -39,18 +42,10 @@ HUD = {
     }
 }
 
-UpdaterState = {
-    None = 0,
-    Loading = 1,
-    Ready = 2
-}
-updaterState = UpdaterState.None
-
 function main()
     while not isSampAvailable() do wait(0) end
-    Arizona:Init()
-    Utils.msg("t.me/moujeek")
-    
+    Utils.msg(Label.CHAT_LOAD1)
+    Utils.msg(Label.CHAT_LOAD2)
     sampRegisterChatCommand("mouhud", function(arg)
         if (DEBUG and #arg > 0) then
             if (arg:find("(%w+) (%d+)")) then
@@ -80,66 +75,23 @@ function main()
             end
         else
             UI.edit = not UI.edit
+            if (UI.edit) then
+                Utils.msg(Label.COMMAND_EDIT)
+            end
         end
     end)
-    addEventHandler("onSendPacket", function(id, bs)
-        local status, str = CEF:readOutcomingPacket(id, bs, true)
-        if (status and str:find("^mouhud:(.+);(.+)")) then
-            local event, payload = str:match("^mouhud:(.+);(.+)")
-            if (event == "ready") then
-                Utils.debugMsg("Ready. Was ALREADY started: ", payload)
-                updaterState = UpdaterState.Ready
-            elseif (event == "setServer") then
-                local newServerId = tonumber(payload) or 0
-                if (HUD.serverId ~= newServerId) then
-                    UI.logo.server = nil
-                    HUD.serverId = newServerId
-                end
-            elseif (event == "setSpeed") then
-                HUD.vehicle.speed = tonumber(payload) or -1
-            elseif (event == "setMileage") then
-                HUD.vehicle.mileage = tonumber(payload) or -1
-            elseif (event == "setFuel") then
-                HUD.vehicle.fuel.count = tonumber(payload:match("(%d+)")) or -1
-            elseif (event == "setIsGreenZone") then
-                HUD.isGreenZone = tonumber(payload) == 1
-            end
-            -- Utils.debugMsg("CEF->Lua:", str)
-        end
-    end)
-    addEventHandler("onReceivePacket", function(id, bs)
-        local status, event, data, json = CEF:readIncomingPacket(id, bs, true)
-        if (status) then
-            if (event:find("arizonahud")) then
-                -- CEF:evalnon(JS.CheckGreenZone)
-                CEF:evalnon(JS.DisableArizonaHUD)
-                if (updaterState == UpdaterState.None) then
-                    Utils.debugMsg("Starting...")
-                    CEF:evalnon(JS.SetupInfotHooks)
-                    updaterState = UpdaterState.Loading
-                end
-            end
+    
+    Arizona:Init()
 
-            if (event == "event.arizonahud.playerSatiety") then
-                HUD.satiety = tonumber(data) or -1
-            elseif (event == "event.arizonahud.playerWanted") then
-                HUD.wanted = tonumber(data) or 0
-            elseif (event == "event.arizonahud.vehicleMileage") then
-                HUD.vehicle.mileage = tonumber(data) or -1
-            elseif (event == "event.arizonahud.vehicleLiters") then
-                HUD.vehicle.fuel.count = tonumber(data) or -1
-            elseif (event == "event.arizonahud.vehicleFuelType") then
-                HUD.vehicle.fuel.type = data or "petrol"
-            elseif (event == "event.arizonahud.serverInfo") then
-                ---@cast data {id: number, title: string, project: string, type: string, onLine: number, flag: number, logo: number, multiplier: number}
-                HUD.serverId = data.id
-            end
-        end
-    end)
     framesCallbacks = {}
     for _, v in ipairs(UI.Frames) do
-        if (type(v) == "table" and type(v.loop) == "function") then
-            table.insert(framesCallbacks, v.loop)
+        if (type(v) == "table") then
+            if (type(v.loop) == "function") then
+                table.insert(framesCallbacks, v.loop)
+            end
+            if (type(v.init) == "function") then
+                v.init()
+            end
         end
     end
     while (true) do

@@ -112,7 +112,7 @@ imgui.OnFrame(
             imgui.SetCursorPos(imgui.ImVec2(15 - (contentSize.x * (navanim.current - 1)) - (30 * (navanim.current - 1)) + navanim.drag, 15 + 10 + 26 + 10 + 15))
             for i, frame in ipairs(frames) do
                 local p = imgui.GetCursorScreenPos()
-                fgDrawList:AddRect(p, p + contentSize, 0xFFff0000)
+                -- fgDrawList:AddRect(p, p + contentSize, 0xFFff0000)
                 imgui.PushStyleVarVec2(imgui.StyleVar.WindowPadding, imgui.ImVec2(10, 10))
                 if (imgui.BeginChild("settings-page-content-" .. frame.index, contentSize, true)) then
                     local drawList, pos, size = imgui.GetWindowDrawList(), imgui.GetWindowPos(), imgui.GetWindowSize()

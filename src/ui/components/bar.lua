@@ -9,6 +9,7 @@ BAR_VALUES = {}
 ---@param maxValue number
 ---@param panicValue? number
 return function(DL, strId, icon, value, maxValue, outline, panicValue)
+    local width, height, barOutline = Config.frames.player.bar.width[0], Config.frames.player.bar.height[0], Config.frames.player.bar.outlineWidth[0]
     if (BAR_VALUES[strId] == nil) then
         BAR_VALUES[strId] = {
             value = value,
@@ -35,9 +36,9 @@ return function(DL, strId, icon, value, maxValue, outline, panicValue)
     UI.Components.OutlineText(tostring(math.floor(value)), nil, UI.outline.width, UI.Colors.Color.TextOutline.vec4)
     imgui.SameLine(30 + 25)
     local p = imgui.GetCursorScreenPos()
-    DL:AddRectFilled(p, p + imgui.ImVec2(BAR_WIDTH, BAR_HEIGHT), UI.Colors.Color.TextOutline.u32, 10)
+    DL:AddRectFilled(p, p + imgui.ImVec2(width, height), UI.Colors.Color.TextOutline.u32, 10)
     if (value > 3) then
-        local barStart, barEnd = p + imgui.ImVec2(2, 2), p + imgui.ImVec2((BAR_WIDTH / 100 * value) - 2, BAR_HEIGHT - 2)
+        local barStart, barEnd = p + imgui.ImVec2(barOutline, barOutline), p + imgui.ImVec2((width / 100 * value) - barOutline, height - barOutline)
         DL:AddRectFilled(barStart, barEnd, imgui.GetColorU32Vec4(color), 10)
 
         if (panicValue and value <= panicValue) then
@@ -45,5 +46,5 @@ return function(DL, strId, icon, value, maxValue, outline, panicValue)
             -- Utils.msg("Draw panic for", strId, UI.blink.alpha)
         end
     end
-    imgui.Dummy(imgui.ImVec2(BAR_WIDTH, BAR_HEIGHT))
+    imgui.Dummy(imgui.ImVec2(width, height))
 end

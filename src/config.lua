@@ -10,6 +10,7 @@ Config = {
             bar = {
                 height = imgui.new.int(12),
                 width = imgui.new.int(190),
+                outlineWidth = imgui.new.int(2),
                 blink = {
                     enabled = imgui.new.bool(true),
                     minValues = imgui.new.int[3](20, 20, 20)
@@ -20,6 +21,7 @@ Config = {
         },
         serverLogo = {
             enabled = imgui.new.bool(true),
+            autoDetect = imgui.new.bool(true),
             scale = imgui.new.float(1),
             mode = imgui.new.int(1), -- 0, 1, 2 (none/arizona/custom)
             customFile = "", -- for mode == 2

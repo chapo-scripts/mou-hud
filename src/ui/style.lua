@@ -5,6 +5,7 @@ imgui.OnInitialize(function()
 
     local style = imgui.GetStyle()
     local colors = style.Colors
+    style.ChildRounding = 10
     style.FrameBorderSize = 2
     style.FrameRounding = 10
     style.FramePadding = imgui.ImVec2(5, 5)

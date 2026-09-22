@@ -25,7 +25,11 @@ imgui.OnFrame(
                 UI.Components.Bar(DL, "SATIETY", "burger", UI.edit and editBlinkValue or HUD.satiety, 100, outline, 20)
             end
             if (Config.frames.player.showStamina[0]) then
-                UI.Components.Bar(DL, "STAMINA", "PERSON_WALKING", UI.edit and editBlinkValue or HUD.satiety, 100, outline, 20)
+                local isInWater = isCharInWater(PLAYER_PED)
+                local staminaBarValue = isInWater and math.floor(memory.getfloat(0xB7CDE0)/39.97000244) or math.floor(memory.getfloat(0xB7CDB4)/31.47000244)
+                if (staminaBarValue < 100 or UI.edit) then
+                    UI.Components.Bar(DL, "STAMINA", isInWater and "CIRCLE" or "PERSON_WALKING", UI.edit and editBlinkValue or staminaBarValue, 100, outline, 20)
+                end
             end
             
             -- Wanted
@@ -40,13 +44,14 @@ imgui.OnFrame(
             imgui.PushFont(UI.font[24].Bold)
             local moneyLabel = "$ " .. (Config.frames.player.moneySeparator[0] and Utils.commaValue(getPlayerMoney(nil), ".") or getPlayerMoney(nil)) ---@diagnostic disable-line
             imgui.SetCursorPosX(imgui.GetWindowWidth() - imgui.CalcTextSize(moneyLabel).x - 10)
+            -- imgui.SetCursorPosX(50 + Config.frames.player.bar.width[0] + Config.frames.player.bar.outlineWidth[0] * 2 - imgui.CalcTextSize(moneyLabel).x - 10)
             UI.Components.OutlineText(moneyLabel, nil, outline.size, outline.color)
             imgui.PopFont()
 
-            -- Weapon
+            -- -- Weapon
             local weapon = getCurrentCharWeapon(PLAYER_PED)
             if (weapon ~= 0 or UI.edit) then
-                local weaponName = Arizona:GetWeaponName(weapon)
+                local weaponName = Arizona:GetWeaponName(weapon) or "NULL"
                 UI.Components.OutlineText(weaponName, nil, outline.size, outline.color)
 
                 if (not Utils.isCurrentWeaponMelee() or UI.edit) then
@@ -73,11 +78,10 @@ imgui.OnFrame(
             end
             
             -- GreenZone
-            local effects = {HUD.isGreenZone}
             if (HUD.isGreenZone or UI.edit) then
                 imgui.PushFont(UI.font[24].Bold)
                 local greenZoneBanIconSize = imgui.CalcTextSize(faicons("BAN"))
-                imgui.SetCursorPosX(imgui.GetWindowWidth() - greenZoneBanIconSize.x - 5)
+                imgui.SetCursorPosX(imgui.GetWindowWidth() - greenZoneBanIconSize.x - 10)
                 local greenZoneBanIconPos = imgui.GetCursorScreenPos()
                 UI.Components.OutlineText(faicons("BAN"), UI.Colors.withAlpha(UI.Colors.Color.Red.vec4, UI.blink.alpha), outline.size, outline.color)
                 imgui.PopFont()
@@ -87,8 +91,7 @@ imgui.OnFrame(
                 UI.Components.OutlineTextDL(imgui.GetBackgroundDrawList(), UI.font[15].Bold, 15, greenZoneBanIconPos + imgui.ImVec2(greenZoneBanIconSize.x / 2 - fistSize.x / 2, greenZoneBanIconSize.y / 2 - fistSize.y / 2), faicons("HAND_FIST"), UI.Colors.Color.Text.vec4, outline.size, outline.color)
                 imgui.PopFont()
             end
-            -- faicons("MASK_FACE")
-            
+
             imgui.PopFont()
             UI.Components.Editor("player", {})
             imgui.End()
@@ -115,7 +118,9 @@ return {
         imgui.TextDisabled(Label.TAB_PLAYER_SETTINGS_TITLE_BARS)
         imgui.PopFont()
         imgui.Checkbox(Label.TAB_PLAYER_SETTINGS_BLINK_ON_LOW .. "##Config.frames.player.bar.blink.enabled", Config.frames.player.bar.blink.enabled)
-        
+        imgui.SliderInt("##Config.frames.player.bar.width", Config.frames.player.bar.width, 15, 400, Label.TAB_PLAYER_SETTINGS_BAR_WIDTH)
+        imgui.SliderInt("##Config.frames.player.bar.height", Config.frames.player.bar.height, 1, 50, Label.TAB_PLAYER_SETTINGS_BAR_HEIGHT)
+        imgui.SliderInt("##Config.frames.player.bar.outlineWidth", Config.frames.player.bar.outlineWidth, 0, 10, Label.TAB_PLAYER_SETTINGS_BAR_OUTLINE_WIDTH)
         -- imgui.SliderInt3("Low values", Config.frames.player.bar.blink.minValues, 1, 100, "%d%%")
     end,
     loop = function()
